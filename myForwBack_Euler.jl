@@ -13,16 +13,11 @@ function knl_gemv!(A, x, b, y)
     bidx = blockIdx().x
     tidx = threadIdx().x
     dimx = blockDim().x
-	M = length(x)
-	K = length(y)
-
-    bidy = blockIdx().y
-    tidy = threadIdx().y
-    dimy = blockDim().y
     i = dimx * (bidx - 1) + tidx
-    j = dimy * (bidy - 1) + tidy
-    if i <= R && j <= K
-        y[i] += (x[j] * A[i,j]) + (b[j] / C)
+    if i <= R
+        for j = 1:C
+            y[i] += (x[j] * A[i,j]) + (b[j] / C)
+        end
     end
     return nothing
 end
@@ -54,16 +49,18 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
     blocks_tup = (num_blocks_x, num_blocks_y)
 
     for n = 2:N+1
+        @show P
         for k = 1:P-1
-            b[n] = Δt*G(Δx*k, t[n-1])
+            # b[n] = Δt*G(Δx*k, t[n-1])
+            b[k] = 0
         end
         b_d = CuArray(b) 
         y_d = CuArray(empty)
         x_d = CuArray(y)
         @show b 
-        @show empty
+        @show y_d
         @show y
-        @cuda threads=thd_tup blocks=blocks_tup knl_gemv!(A, x_d, b_d, y_d)
+        @cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!(A, x_d, b_d, y_d)
         synchronize()
         @show y_d
         y[:] .+= y_d
