@@ -26,7 +26,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
 
 	N = Integer((tf - t1)/Δt)  # total number of points is N + 1
     M = length(y) + 2
-	Y = Matrix{Float64}(undef,N+1,M)
+	Y = Matrix{Float64}(undef,M,N+1)
     Y[:,1] = [0;y[:];0]
     t = t1:Δt:tf
 
@@ -34,7 +34,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
     sparse(1:P-2,2:P-1,ones(P-2),P-1,P-1))
     A = CuArray(A)
     
-	Exact = Matrix{Float64}(undef,N+1,M)
+	Exact = Matrix{Float64}(undef,M,N+1)
     Exact[:,1] = [0;y[:];0]
     b = Array{Float64}(undef, P-1)
     empty = zeros(length(y))
