@@ -35,11 +35,12 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
     Y[:,1] = [0;y[:];0]
     t = t1:Δt:tf
 
-    A = Δt*(2/Δx^2)*(sparse(1:P-1,1:P-1,-2*ones(P-1), P-1, P-1) + sparse(2:P-1,1:P-2,ones(P-2),P-1,P-1) +
+    A = Δt(2/Δx^2)*(sparse(1:P-1,1:P-1,-2*ones(P-1), P-1, P-1) + sparse(2:P-1,1:P-2,ones(P-2),P-1,P-1) +
     sparse(1:P-2,2:P-1,ones(P-2),P-1,P-1))
     A = CuArray(A)
     @show y
     @show A
+    @show A * y
     
 	Exact = Matrix{Float64}(undef,M,P+1)
     Exact[:,1] = [0;y[:];0]
@@ -66,7 +67,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
         @cuda threads=thd_tup blocks=blocks_tup knl_gemv!(A, x_d, b_d, y_d)
         synchronize()
         @show y_d
-        y[:] .= y_d
+        y[:] .+= y_d
         Y[:,n] = [0;y[:];0]
         Exact[:,n] = myexact_fun(t[n])
     end
@@ -80,7 +81,7 @@ function exact(t)
     for n = 2:P
         y[n] = exp(-2t)*sin(pi*(n-1)*Δx)
     end
-    y[N+1] = 0
+    y[P+1] = 0
     return y
 end
 
