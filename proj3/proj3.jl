@@ -28,8 +28,8 @@ function knl_gemv!(A, x, b, y)
     return nothing
 end
 
-R = 5
-C = 5
+R = 25000
+C = 25000
 A = Array{Float64}(undef, R, C)
 for i = 1:R
     for j = 1:C
@@ -62,8 +62,10 @@ trash = CuArray(compile_trash)
 
 threads_per_x = 32
 num_blocks_x = cld(R, threads_per_x)
-@cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!(D_a, d_x, d_b, trash)
-
-@time @cuda threads=thd_tuple blocks=blocks_tup knl_gemv!(D_A, d_x, d_b, d_y) 
+@cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!(D_A, d_x, d_b, trash)
+t_dev = @elapsed begin
+@cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!(D_A, d_x, d_b, d_y) 
 synchronize()
+end
+@show t_dev
 @time fake_knl_gemv!(A, x, b, y)

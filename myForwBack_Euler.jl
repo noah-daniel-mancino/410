@@ -84,9 +84,9 @@ function f(x)
 end
 k = 2
 Δx = 0.1
-λ = 0.1
-Δt = 0.001
-T = .1
+λ = 0.25
+Δt = Δx^2 * λ
+T = 1
 
 P  = Integer((1-0)/Δx) # N+1 total nodes, N-1 interior nodes
 
@@ -97,5 +97,4 @@ end
 
 (t, U, E) = my_forward_Euler(Δt, 0, T, y, Δx, exact)
 
-@show U[5,5]
-@show E[5,5]
+@show error(exact(1), U[:,length(t)])
