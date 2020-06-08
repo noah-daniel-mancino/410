@@ -33,7 +33,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
 	N = Integer((tf - t1)/Δt)  # total number of points is N + 1
 	M = length(y)
 	Y = Matrix{Float64}(undef, M, N+1)
-    Y[:,1] = y[:]
+    Y[:,1] = [0;y[:];0]
     t = t1:Δt:tf
 
     A = (2/Δx^2)*(sparse(1:N-1,1:N-1,-2*ones(N-1), N-1, N-1) + sparse(2:N-1,1:N-2,ones(N-2),N-1,N-1) +
@@ -41,7 +41,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
     A = CuArray(A)
     
 	Exact = Matrix{Float64}(undef,M,N+1)
-    Exact[:,1] = y[:]
+    Exact[:,1] = [0;y[:];0]
     b = Array{Float64}(undef, N-1)
     empty = zeros(length(y))
     threads_per_x = 32
@@ -58,10 +58,14 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
         b_d = CuArray(b) 
         y_d = CuArray(empty)
         x_d = CuArray(y)
+        @show size(A)
+        @show length(x_d)
+        @show length(b_d)
+        @show length(y_d)
         @cuda threads=thd_tup blocks=blocks_tup knl_gemv!(A, x_d, b_d, y_d)
         synchronize()
-        y[:] .= [0;y_d;0]
-        Y[:,n] = y[:]
+        y[:] .= [y_d]
+        Y[:,n] = [0;y[:];0]
         Exact[:,n] = myexact_fun(t[n])
     end
 
@@ -97,12 +101,10 @@ T = .1
 
 N  = Integer((1-0)/Δx) # N+1 total nodes, N-1 interior nodes
 
-y = Array{Float64}(undef, N+1)
-y[1] = 0
+y = Array{Float64}(undef, N-1)
 for n = 2:N
-    y[n] = f(Δx*(n-1))
+    y[n-1] = f(Δx*(n-1))
 end
-y[N+1] = 0
 
 (t, U, E) = my_forward_Euler(Δt, 0, T, y, Δx, exact)
 
