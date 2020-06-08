@@ -58,10 +58,11 @@ D_A = CuArray(A)
 d_x = CuArray(x)
 d_b = CuArray(b)
 d_y = CuArray(y)
+trash = CuArray(compile_trash)
 
 threads_per_x = 32
 num_blocks_x = cld(R, threads_per_x)
-@cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!()
+@cuda threads=threads_per_x blocks=num_blocks_x knl_gemv!(D_a, d_x, d_b, trash)
 
 @time @cuda threads=thd_tuple blocks=blocks_tup knl_gemv!(D_A, d_x, d_b, d_y) 
 synchronize()
