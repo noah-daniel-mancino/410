@@ -1,6 +1,5 @@
 using LinearAlgebra
 using SparseArrays
-using Plots
 using CuArrays
 using CUDAnative
 using CUDAdrv
@@ -31,28 +30,28 @@ end
 function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
 
 	N = Integer((tf - t1)/Δt)  # total number of points is N + 1
-	M = length(y)
+	M = length(y) + 2
 	Y = Matrix{Float64}(undef, M, N+1)
     Y[:,1] = [0;y[:];0]
     t = t1:Δt:tf
 
-    A = (2/Δx^2)*(sparse(1:N-1,1:N-1,-2*ones(N-1), N-1, N-1) + sparse(2:N-1,1:N-2,ones(N-2),N-1,N-1) +
-    sparse(1:N-2,2:N-1,ones(N-2),N-1,N-1))
+    A = (2/Δx^2)*(sparse(1:P-1,1:P-1,-2*ones(P-1), P-1, P-1) + sparse(2:P-1,1:P-2,ones(P-2),P-1,P-1) +
+    sparse(1:P-2,2:P-1,ones(P-2),P-1,P-1))
     A = CuArray(A)
     
-	Exact = Matrix{Float64}(undef,M,N+1)
+	Exact = Matrix{Float64}(undef,M,P+1)
     Exact[:,1] = [0;y[:];0]
-    b = Array{Float64}(undef, N-1)
+    b = Array{Float64}(undef, P-1)
     empty = zeros(length(y))
     threads_per_x = 32
     threads_per_y = 32
     thd_tup = (threads_per_x, threads_per_y)
-    num_blocks_x = cld(size(A)[0], threads_per_x)
-    num_blocks_y = cld(size(A)[1], threads_per_y)
+    num_blocks_x = cld(size(A)[1], threads_per_x)
+    num_blocks_y = cld(size(A)[2], threads_per_y)
     blocks_tup = (num_blocks_x, num_blocks_y)
 
-    for n = M:N+1
-        for k = 1:N-1
+    for n = 2:N+1
+        for k = 1:P-1
             b[n] = G(Δx*k, t[n-1])
         end
         b_d = CuArray(b) 
@@ -73,9 +72,9 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
 end
 
 function exact(t)
-    y = Array{Float64}(undef, N+1)
+    y = Array{Float64}(undef, P+1)
     y[1] = 0
-    for n = 2:N
+    for n = 2:P
         y[n] = exp(-2t)*sin(pi*(n-1)*Δx)
     end
     y[N+1] = 0
@@ -99,10 +98,10 @@ k = 2
 Δt = 0.001
 T = .1
 
-N  = Integer((1-0)/Δx) # N+1 total nodes, N-1 interior nodes
+P  = Integer((1-0)/Δx) # N+1 total nodes, N-1 interior nodes
 
-y = Array{Float64}(undef, N-1)
-for n = 2:N
+y = Array{Float64}(undef, P-1)
+for n = 2:P
     y[n-1] = f(Δx*(n-1))
 end
 
