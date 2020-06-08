@@ -21,7 +21,7 @@ function knl_gemv!(A, x, b, y)
 
     i = dimx * (bidx - 1) + tidx
     if i <= R
-        for j <= C
+        for j = 1:C
         y[i] += (x[j] * A[i,j]) + (b[j] / C)
         end
 	end
