@@ -39,11 +39,7 @@ function my_forward_Euler(Δt, t1, tf, y, Δx, myexact_fun)
     b = Array{Float64}(undef, P-1)
     empty = zeros(length(y))
     threads_per_x = 32
-    threads_per_y = 32
-    thd_tup = (threads_per_x, threads_per_y)
     num_blocks_x = cld(size(A)[1], threads_per_x)
-    num_blocks_y = cld(size(A)[2], threads_per_y)
-    blocks_tup = (num_blocks_x, num_blocks_y)
 
     for n = 2:N+1
         @show P
